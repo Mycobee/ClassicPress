@@ -398,8 +398,12 @@ if ( ! function_exists( 'wp_mail' ) ) :
 		// Set "From" name and email.
 
 		// If we don't have a name from the input headers.
+		if ( ! isset( $from_name ) && defined( 'MAIL_FROM_NAME' ) && MAIL_FROM_NAME ) {
+			$from_name = MAIL_FROM_NAME;
+		}
+
 		if ( ! isset( $from_name ) ) {
-			$from_name = defined( 'MAIL_FROM_NAME' ) && MAIL_FROM_NAME ? MAIL_FROM_NAME : 'ClassicPress';
+			$from_name = 'ClassicPress';
 		}
 
 		/*
@@ -509,28 +513,7 @@ if ( ! function_exists( 'wp_mail' ) ) :
 		 * This runs before the `phpmailer_init` action, so plugins can still override it.
 		 */
 		if ( defined( 'MAIL_HOST' ) && MAIL_HOST ) {
-			$phpmailer->isSMTP();
-			$phpmailer->Host = MAIL_HOST;
-
-			$mail_encryption   = defined( 'MAIL_ENCRYPTION' ) ? strtolower( (string) MAIL_ENCRYPTION ) : 'tls';
-			$mail_default_port = 'ssl' === $mail_encryption ? 465 : 587;
-			$phpmailer->Port   = defined( 'MAIL_PORT' ) && MAIL_PORT ? (int) MAIL_PORT : $mail_default_port;
-
-			if ( defined( 'MAIL_USER' ) && MAIL_USER ) {
-				$phpmailer->SMTPAuth = true;
-				$phpmailer->Username = MAIL_USER;
-				$phpmailer->Password = defined( 'MAIL_PASSWORD' ) ? MAIL_PASSWORD : '';
-			} else {
-				$phpmailer->SMTPAuth = false;
-			}
-
-			if ( 'none' === $mail_encryption ) {
-				$phpmailer->SMTPSecure  = '';
-				$phpmailer->SMTPAutoTLS = false;
-			} else {
-				$phpmailer->SMTPSecure  = 'ssl' === $mail_encryption ? 'ssl' : 'tls';
-				$phpmailer->SMTPAutoTLS = true;
-			}
+			_wp_mail_use_smtp( $phpmailer );
 		}
 
 		// Set Content-Type and charset.
