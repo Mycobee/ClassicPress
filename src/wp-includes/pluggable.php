@@ -398,6 +398,10 @@ if ( ! function_exists( 'wp_mail' ) ) :
 		// Set "From" name and email.
 
 		// If we don't have a name from the input headers.
+		if ( ! isset( $from_name ) && defined( 'MAIL_FROM_NAME' ) && MAIL_FROM_NAME ) {
+			$from_name = MAIL_FROM_NAME;
+		}
+
 		if ( ! isset( $from_name ) ) {
 			$from_name = 'ClassicPress';
 		}
@@ -409,6 +413,10 @@ if ( ! function_exists( 'wp_mail' ) ) :
 		 * another option, but some hosts may refuse to relay mail from an unknown domain.
 		 * See https://core.trac.wordpress.org/ticket/5007.
 		 */
+		if ( ! isset( $from_email ) && defined( 'MAIL_FROM' ) && MAIL_FROM ) {
+			$from_email = MAIL_FROM;
+		}
+
 		if ( ! isset( $from_email ) ) {
 			// Get the site domain and get rid of www.
 			$sitename   = wp_parse_url( network_home_url(), PHP_URL_HOST );
@@ -499,6 +507,14 @@ if ( ! function_exists( 'wp_mail' ) ) :
 
 		// Set to use PHP's mail().
 		$phpmailer->isMail();
+
+		/*
+		 * Send through a mail server instead when one is configured in wp-config.php.
+		 * This runs before the `phpmailer_init` action, so plugins can still override it.
+		 */
+		if ( defined( 'MAIL_HOST' ) && MAIL_HOST ) {
+			_wp_mail_use_smtp( $phpmailer );
+		}
 
 		// Set Content-Type and charset.
 

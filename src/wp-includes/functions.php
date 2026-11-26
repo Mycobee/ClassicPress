@@ -8803,3 +8803,110 @@ function wp_admin_notice( $message, $args = array() ) {
 
 	echo wp_kses_post( wp_get_admin_notice( $message, $args ) );
 }
+
+/**
+ * Configures PHPMailer to send through the mail server set in wp-config.php.
+ *
+ * Uses the MAIL_HOST, MAIL_PORT, MAIL_USER, MAIL_PASSWORD and MAIL_ENCRYPTION constants.
+ *
+ * @since CP-2.8.0
+ * @access private
+ *
+ * @param PHPMailer\PHPMailer\PHPMailer $phpmailer The PHPMailer instance.
+ */
+function _wp_mail_use_smtp( $phpmailer ) {
+	$encryption = _wp_mail_get_smtp_encryption();
+
+	$phpmailer->isSMTP();
+	$phpmailer->Host = MAIL_HOST;
+	$phpmailer->Port = _wp_mail_get_smtp_port( $encryption );
+
+	_wp_mail_set_smtp_auth( $phpmailer );
+	_wp_mail_set_smtp_encryption( $phpmailer, $encryption );
+}
+
+/**
+ * Gets the SMTP encryption type from MAIL_ENCRYPTION.
+ *
+ * @since CP-2.8.0
+ * @access private
+ *
+ * @return string 'tls', 'ssl' or 'none'. Defaults to 'tls'.
+ */
+function _wp_mail_get_smtp_encryption() {
+	if ( ! defined( 'MAIL_ENCRYPTION' ) ) {
+		return 'tls';
+	}
+
+	return strtolower( (string) MAIL_ENCRYPTION );
+}
+
+/**
+ * Gets the SMTP port from MAIL_PORT, or the default port for the encryption type.
+ *
+ * @since CP-2.8.0
+ * @access private
+ *
+ * @param string $encryption The encryption type.
+ * @return int The SMTP port.
+ */
+function _wp_mail_get_smtp_port( $encryption ) {
+	if ( defined( 'MAIL_PORT' ) && MAIL_PORT ) {
+		return (int) MAIL_PORT;
+	}
+
+	if ( 'ssl' === $encryption ) {
+		return 465;
+	}
+
+	return 587;
+}
+
+/**
+ * Sets SMTP authentication from MAIL_USER and MAIL_PASSWORD.
+ *
+ * @since CP-2.8.0
+ * @access private
+ *
+ * @param PHPMailer\PHPMailer\PHPMailer $phpmailer The PHPMailer instance.
+ */
+function _wp_mail_set_smtp_auth( $phpmailer ) {
+	if ( ! defined( 'MAIL_USER' ) || ! MAIL_USER ) {
+		$phpmailer->SMTPAuth = false;
+		return;
+	}
+
+	$phpmailer->SMTPAuth = true;
+	$phpmailer->Username = MAIL_USER;
+	$phpmailer->Password = '';
+
+	if ( defined( 'MAIL_PASSWORD' ) ) {
+		$phpmailer->Password = MAIL_PASSWORD;
+	}
+}
+
+/**
+ * Sets SMTP encryption for the encryption type.
+ *
+ * @since CP-2.8.0
+ * @access private
+ *
+ * @param PHPMailer\PHPMailer\PHPMailer $phpmailer  The PHPMailer instance.
+ * @param string                        $encryption The encryption type.
+ */
+function _wp_mail_set_smtp_encryption( $phpmailer, $encryption ) {
+	if ( 'none' === $encryption ) {
+		$phpmailer->SMTPSecure  = '';
+		$phpmailer->SMTPAutoTLS = false;
+		return;
+	}
+
+	$phpmailer->SMTPAutoTLS = true;
+
+	if ( 'ssl' === $encryption ) {
+		$phpmailer->SMTPSecure = 'ssl';
+		return;
+	}
+
+	$phpmailer->SMTPSecure = 'tls';
+}
