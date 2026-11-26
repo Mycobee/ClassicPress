@@ -511,7 +511,10 @@ if ( ! function_exists( 'wp_mail' ) ) :
 		if ( defined( 'MAIL_HOST' ) && MAIL_HOST ) {
 			$phpmailer->isSMTP();
 			$phpmailer->Host = MAIL_HOST;
-			$phpmailer->Port = defined( 'MAIL_PORT' ) && MAIL_PORT ? (int) MAIL_PORT : 587;
+
+			$mail_encryption   = defined( 'MAIL_ENCRYPTION' ) ? strtolower( (string) MAIL_ENCRYPTION ) : 'tls';
+			$mail_default_port = 'ssl' === $mail_encryption ? 465 : 587;
+			$phpmailer->Port   = defined( 'MAIL_PORT' ) && MAIL_PORT ? (int) MAIL_PORT : $mail_default_port;
 
 			if ( defined( 'MAIL_USER' ) && MAIL_USER ) {
 				$phpmailer->SMTPAuth = true;
@@ -520,8 +523,6 @@ if ( ! function_exists( 'wp_mail' ) ) :
 			} else {
 				$phpmailer->SMTPAuth = false;
 			}
-
-			$mail_encryption = defined( 'MAIL_ENCRYPTION' ) ? strtolower( (string) MAIL_ENCRYPTION ) : 'tls';
 
 			if ( 'none' === $mail_encryption ) {
 				$phpmailer->SMTPSecure  = '';
